@@ -1,0 +1,29 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Budget {
+  id            String   @id @db.Uuid
+  orderId       String   @unique @map("order_id") @db.Uuid
+  customerId    String   @map("customer_id") @db.Uuid
+  customerName  String   @map("customer_name")
+  customerEmail String   @map("customer_email")
+  items         Json
+  totalAmount   Decimal  @map("total_amount") @db.Decimal(12, 2)
+  status        String
+  checkoutId    String?  @map("checkout_id")
+  checkoutUrl   String?  @map("checkout_url")
+  paymentId     String?  @map("payment_id")
+  createdAt     DateTime @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([customerId])
+  @@index([status])
+  @@map("budgets")
+}

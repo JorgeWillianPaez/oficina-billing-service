@@ -1,0 +1,55 @@
+services:
+  billing-service:
+    build: .
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://oficina:oficina@billing-db:5432/billing_service
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_SECRET: local-development-secret
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
+      MERCADOPAGO_WEBHOOK_SECRET: ${MERCADOPAGO_WEBHOOK_SECRET:-}
+      MERCADOPAGO_NOTIFICATION_URL: ${MERCADOPAGO_NOTIFICATION_URL:-}
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+    depends_on:
+      billing-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  billing-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: oficina
+      POSTGRES_PASSWORD: oficina
+      POSTGRES_DB: billing_service
+    ports:
+      - "5433:5432"
+    volumes:
+      - billing-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oficina -d billing_service"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+
+volumes:
+  billing-db-data:
